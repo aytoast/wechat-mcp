@@ -1,4 +1,6 @@
-# wechat-daemon
+# WeChat MCP
+
+[网站与文档](https://aytoast.github.io/wechat-mcp/) · [网站源码](website/)
 
 `wechat-daemon` 是 Windows 端 WeChat 后台服务。它通过 UI Automation 读取当前可见的 WeChat 聊天窗口，记录可见消息，修复重叠 viewport，并通过本地 API 提供结构化 WeChat 上下文。
 
