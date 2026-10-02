@@ -14,7 +14,7 @@ python -m http.server 4173 --bind 127.0.0.1 --directory website
 
 URL: https://aytoast.github.io/wechat-mcp/
 
-`.github/workflows/pages.yml` publishes only `website/` after website changes on `master`. GitHub Pages source is GitHub Actions. Assets and documentation links use relative paths. Previous standalone website URL redirects here.
+`.github/workflows/pages.yml` publishes only `website/` after website changes on `master`. GitHub Pages source is GitHub Actions. Assets and documentation links use relative paths. Previous standalone repository became unavailable during migration; its Pages URL returns 404. Use canonical URL above.
 
 ## Content
 
