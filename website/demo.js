@@ -3,13 +3,10 @@
   if (!root) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const narrow = matchMedia('(max-width: 800px)');
-  const duration = 28000;
-  const arrivalTimes = [450, 1150, 1850, 2550, 3250, 3950, 4650, 5350, 6050, 6750, 7450, 8150, 8850, 9550];
-  const answerTimes = [17400, 18700, 20000, 21300];
+  const allArrivalTimes = [450, 1150, 1850, 2550, 3250, 3950, 4650, 5350, 6050, 6750, 7450, 8150, 8850, 9550];
   const $ = selector => root.querySelector(selector);
   const $$ = selector => [...root.querySelectorAll(selector)];
   const viewport = $('.story-messages');
-  const track = $('.story-message-track');
   const list = $('#story-message-list');
   const aiBody = $('.story-codex-body');
   const question = $('#story-question');
@@ -36,26 +33,18 @@
     ['小周', '收到，我把设计稿和待办都更新到群里。']
   ];
   const imageDiscussion = [
-    ['小周', '新版首页的验收项，我们在这里对一下。'],
-    ['小林', '我负责周一验收，先看阻塞上线的问题。', true],
-    ['阿远', '上版第一次连接时，没有提醒先打开微信。'],
-    ['小周', '已补说明，我把它放到连接入口下面了。'],
-    ['小林', '双列内容保留，窄屏要改成单列。', true],
-    ['小周', '手机稿已经改好，320px 的按钮还要检查。'],
-    ['阿远', '读取为空时，之前整个区域会消失。'],
-    ['小周', '已改成保留卡片，显示暂无消息。'],
-    ['小林', '文案也区分一下：没消息、连接失败是两种情况。', true],
-    ['阿远', '失败提示我周五前补，保留重试入口。'],
-    ['小周', '最新桌面稿发这里，连接说明和空状态都补了。', false, true],
-    ['小林', '周一我验收空状态、重试入口和手机按钮。', true],
-    ['阿远', '锁屏也要实测一次，确认提示和恢复连接。'],
-    ['小周', '我来检查 320px 按钮，周五前反馈；锁屏提示周一一起定。']
+    ['小周', '新版桌面稿整理好了，周一按这版验收。'],
+    ['小林', '首次连接说明和空状态，图上都补了吗？', true],
+    ['小周', '补了，连接说明放在入口下面，没消息时保留卡片。'],
+    ['阿远', '失败提示和重试入口，我周五前补。'],
+    ['小林', '我先核对图上的内容，再列出需要实测的项目。', true],
+    ['小周', '桌面稿在这里。手机稿还在改，320px 按钮我周五前反馈。', false, true]
   ];
-  const savedText = '周一上线验收清单\n\n周五前\n· 小周：移动端稿与 320px 检查\n· 阿远：首次连接说明\n· 小林：空状态与页面文案\n\n周一\n· 阿远：联调消息和图片读取\n· 小林：确认锁屏提示\n\n待确认：320px 检查结果、锁屏提示\n新需求：留到下版';
+  const outgoingText = '周一 10:00 验收新版首页。小周请准备移动端稿，阿远请演示消息和图片读取。我会核对空状态和锁屏提示。';
   const scenes = {
     read: {
       messages: discussion,
-      prompt: '我刚开完会，错过了这轮讨论。请整理周一上线前已经定下的事项、负责人和截止时间，单独列出还没定、需要我确认的事。',
+      prompt: '这轮讨论消息比较多。请整理周一上线前已经定下的事项、负责人和截止时间，单独列出还没定、需要我确认的事。',
       title: '周一上线前，你需要跟进这些事。',
       items: [
         ['方案已定', '左侧导航、双列卡片；首版先支持 Windows。'],
@@ -64,42 +53,63 @@
         ['仍需跟进', '等小周反馈 320px 检查结果；锁屏提示待定，新需求留到下版。']
       ],
       note: '按这轮讨论整理，待确认项已单独列出。',
-      captions: ['讨论还在继续，决定散落在一条条消息里。', '错过会议间隙的讨论，先找出自己需要推进的事。', 'Codex 通过 WeChat MCP 读取这轮讨论。', '决定、负责人、截止时间与待确认项，一次对齐。']
+      captions: ['群聊消息持续到达，聊天记录随之向下滚动。', '向 Codex 提问，指定需要读取的这轮讨论。', 'WeChat MCP 读取消息，将内容返回 Codex。', 'Codex 根据返回的消息，整理决定、负责人和待确认项。']
     },
     image: {
       messages: imageDiscussion,
-      prompt: '我负责周一验收。结合这轮反馈和最新设计稿，列出已经解决的问题、仍需改动的地方，以及上线前要逐项检查的内容。',
-      title: '可以按这份清单准备周一验收。',
+      prompt: '查看设计协作群刚发的桌面稿，核对首次连接说明和空状态是否已经补上，再列出仅凭这张图还无法确认、需要周一实测的项目。',
+      title: '这张桌面稿里，可以确认两处改动。',
       items: [
-        ['稿上已补', '连接入口下有首次连接说明，空状态保留卡片并显示暂无消息。'],
-        ['周五前补齐', '阿远补失败提示与重试入口；小周检查 320px 按钮。'],
-        ['周一逐项检查', '你验收空状态、失败重试、窄屏按钮，以及锁屏后的提示和恢复。'],
-        ['还不能确认', '这张是桌面稿，手机布局和实际重试行为仍需现场验证。']
+        ['首次连接说明', '连接入口下方已写明：首次连接前，请打开并登录微信。'],
+        ['空状态', '最近会话卡片仍保留，内部显示暂无消息。'],
+        ['图中未展示', '失败提示、重试入口和锁屏状态，需要在运行界面核对。'],
+        ['另行实测', '这张是桌面稿；手机 320px 布局与实际连接行为仍需验证。']
       ],
-      note: '结合返回的图片与群聊反馈整理。',
-      captions: ['反馈陆续补进群里，最新设计稿也来了。', '把设计稿和讨论放在一起，准备一份可执行的验收清单。', 'WeChat MCP 把可获取的图片与消息一起交给 Codex。', '哪些已改、哪些待验，区分清楚再上线。']
+      note: '图片用于确认可见内容，运行行为仍需实测。',
+      captions: ['设计稿作为图片出现在微信会话里。', '请 Codex 核对图中已经修改的内容。', 'WeChat MCP 获取聊天图片，并把图片内容返回 Codex。', 'Codex 查看返回的图片，区分图上可见内容与待实测项目。']
     },
     send: {
-      messages: discussion,
-      prompt: '把群里已经确认的安排整理成我的周一验收清单，保留负责人、截止时间和待确认项，发到文件传输助手，方便我跟进。',
-      title: '清单已整理，接着保存到微信。',
+      messages: [],
+      prompt: '向设计协作群发送这条周一验收提醒：\n' + outgoingText,
+      title: '验收提醒已在微信中提交。',
       items: [
-        ['周五前', '小周补移动端稿；阿远写连接说明；你整理空状态与文案。'],
-        ['周一', '阿远联调消息和图片读取，你确认锁屏提示。'],
-        ['单列待确认项', '320px 检查结果、锁屏提示继续跟进；新需求留到下版。'],
-        ['保存结果', '已在文件传输助手的本地聊天中看到提交。']
+        ['目标会话', '设计协作群'],
+        ['本地提交', '已在聊天记录中观察到这条验收提醒。']
       ],
-      note: '本地提交已观察到 · 接收端送达未验证',
-      captions: ['群里敲定了分工，接下来需要逐项跟进。', '把确认过的安排存回微信，方便周一逐项核对。', 'Codex 先读取讨论，整理负责人和时间。', '清单整理完毕，按你的要求保存到文件传输助手。']
+      note: '接收端送达状态仍为未验证。',
+      captions: ['在 Codex 中指定会话，给出需要发送的消息。', 'WeChat MCP 打开目标会话，填写消息内容。', '消息出现在微信中，等待本地提交回执。', 'Codex 收到本地提交结果，接收端送达状态保留为未验证。']
     }
   };
+
+  // Each feature has its own sequence; sending never calls a reading tool.
+  const timelines = {
+    read: {
+      duration: 28000, codex: 11000, prompt: 11500, tool: 15000, returned: 16800,
+      answers: [17400, 18700, 20000, 21300], note: 22600,
+      breaks: [11000, 15000, 17400], chapters: [0, 12000, 15700, 22400],
+      staticChapters: [10500, 14600, 17000, 28000], labels: ['群聊', '提问', '读取', '总结']
+    },
+    image: {
+      duration: 24000, codex: 7000, prompt: 7500, tool: 11000, returned: 12800,
+      answers: [14600, 15900, 17200, 18500], note: 20000,
+      breaks: [7000, 11000, 14600], chapters: [5000, 8500, 13500, 22000],
+      staticChapters: [6200, 10600, 13800, 24000], labels: ['图片', '提问', '读取', '分析']
+    },
+    send: {
+      duration: 18000, codex: 0, prompt: 500, tool: 7000, draft: 7800, submitted: 10800, returned: 12000,
+      answers: [12600, 13900], note: 15100,
+      breaks: [7800, 10800, 12000], chapters: [4000, 9500, 11400, 16500],
+      staticChapters: [4000, 9500, 11500, 18000], labels: ['指令', '输入', '提交', '回执']
+    }
+  };
+  let timing = timelines.read, duration = timing.duration, arrivalTimes = allArrivalTimes;
 
   const designImage = '<svg viewBox="0 0 248 154" role="img" aria-label="桌面首页设计稿：左侧导航，双列卡片，首次连接说明与暂无消息空状态"><rect width="248" height="154" rx="4" fill="#f6f8f2"/><path d="M0 23h248M54 23v131" stroke="#dfe6d5"/><circle cx="11" cy="12" r="3" fill="#8daa74"/><text x="20" y="15" font-size="8" fill="#526b40">工作台</text><rect x="8" y="36" width="38" height="14" rx="3" fill="#e0ebd5"/><text x="14" y="46" font-size="7" fill="#64804f">首页</text><text x="14" y="67" font-size="7" fill="#8b997e">会话</text><text x="65" y="42" font-size="9" fill="#3f5832">连接微信</text><rect x="183" y="30" width="54" height="17" rx="4" fill="#739553"/><text x="194" y="42" font-size="7" fill="white">开始连接</text><text x="65" y="58" font-size="7" fill="#899779">首次连接前，请打开并登录微信。</text><rect x="65" y="69" width="80" height="71" rx="4" fill="white" stroke="#dde6d2"/><rect x="154" y="69" width="83" height="71" rx="4" fill="white" stroke="#dde6d2"/><text x="76" y="86" font-size="8" fill="#5b7548">最近会话</text><text x="83" y="115" font-size="7" fill="#9caa8d">暂无消息</text><text x="165" y="86" font-size="8" fill="#5b7548">工作安排</text><path d="M165 101h59M165 113h48M165 125h54" stroke="#e5ebde" stroke-width="4" stroke-linecap="round"/></svg>';
 
   let sceneKey = 'read', elapsed = 0, playing = false, visible = false, started = false;
-  let frame = 0, previous = 0, selectedSurface = '', shownCount = -1, savedMode = false;
+  let frame = 0, previous = 0, selectedSurface = '', shownCount = -1, outgoingMode = false;
   let messageNodes = [], scrollStops = [], answerNodes = [], lastAnswerCount = -1, lastNote = false;
-  let aiScroll = null, lastSaved = false;
+  let aiScroll = null, lastOutgoing = false, lastImage = false;
   const clamp = x => Math.max(0, Math.min(1, x));
   // Solve cubic-bezier(.22, .68, 0, 1), shared by arrivals, scrolling and window entrance.
   function ease(x) {
@@ -148,16 +158,17 @@
       const node = messageNodes[i];
       const target = Math.max(0, node.offsetTop + node.offsetHeight + 6 - viewport.clientHeight);
       const prior = scrollStops[i-1];
-      const from = prior ? prior.from + (prior.to - prior.from) * ease((arrivalTimes[i] - prior.at) / 850) : 0;
-      scrollStops.push({at: arrivalTimes[i], from, to: target});
+      const at = sceneKey === 'send' ? timing.submitted : arrivalTimes[i];
+      const from = prior ? prior.from + (prior.to - prior.from) * ease((at - prior.at) / 850) : 0;
+      scrollStops.push({at, from, to: target});
     }
     shownCount = -1;
   }
-  function mountMessages(saved) {
-    savedMode = saved;
-    messageNodes = saved ? [makeMessage(['小林', savedText, true])] : scenes[sceneKey].messages.map(makeMessage);
+  function mountMessages(outgoing) {
+    outgoingMode = outgoing;
+    messageNodes = outgoing ? [makeMessage(['小林', outgoingText, true])] : scenes[sceneKey].messages.map(makeMessage);
     list.replaceChildren(...messageNodes);
-    $('.story-message-time').textContent = saved ? '今天 10:35' : '今天 10:32';
+    $('.story-message-time').textContent = sceneKey === 'send' ? '今天 10:35' : '今天 10:32';
     measureMessages();
     viewport.scrollTop = 0;
   }
@@ -175,31 +186,32 @@
   }
   function render(force = false) {
     const scene = scenes[sceneKey];
-    const isSaved = sceneKey === 'send' && elapsed >= 22000;
-    if (savedMode !== isSaved) mountMessages(isSaved);
-    const count = isSaved ? Number(elapsed >= 23600) : arrivalTimes.filter(at => elapsed >= at).length;
+    const sending = sceneKey === 'send';
+    const isOutgoing = sending && elapsed >= timing.submitted;
+    if (outgoingMode !== isOutgoing) mountMessages(isOutgoing);
+    const count = sending ? Number(isOutgoing) : arrivalTimes.filter(at => elapsed >= at).length;
     if (count !== shownCount) {
       messageNodes.forEach((node, index) => {node.hidden = index >= count;});
       shownCount = count;
       text('#story-message-count', count + ' 条消息');
-      if (!isSaved) text('#story-preview', count ? scene.messages[count - 1][1] : '有新消息');
+      text('#story-preview', sending ? count ? outgoingText : '周一验收提醒' : count ? scene.messages[count - 1][1] : '有新消息');
     }
     messageNodes.forEach((node, index) => {
       if (index >= count) return;
-      const amount = reduced.matches ? 1 : ease((elapsed - (isSaved ? 23600 : arrivalTimes[index])) / 500);
+      const amount = reduced.matches ? 1 : ease((elapsed - (isOutgoing ? timing.submitted : arrivalTimes[index])) / 500);
       node.style.opacity = String(amount);
       node.style.transform = 'translateX(' + ((node.classList.contains('self') ? 1 : -1) * 12 * (1 - amount)) + 'px) scale(' + (.97 + .03 * amount) + ')';
-      node.classList.toggle('is-read', !isSaved && elapsed >= 15000 && elapsed < 16800 && index >= count - 4);
+      node.classList.toggle('is-read', !sending && elapsed >= timing.tool && elapsed < timing.returned && index >= count - 4);
     });
-    if (!isSaved && (elapsed <= 11000 || force || lastSaved)) viewport.scrollTop = scrollPosition(elapsed);
-    if (isSaved && elapsed >= 23600 && (elapsed < 24600 || force)) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight) * (reduced.matches ? 1 : ease((elapsed - 23600) / 850));
-    lastSaved = isSaved;
-    const reveal = reduced.matches ? Number(elapsed >= 11000) : ease((elapsed - 11000) / 900);
+    if (!sending && (elapsed <= timing.codex || force || lastOutgoing)) viewport.scrollTop = scrollPosition(elapsed);
+    if (isOutgoing && (elapsed < timing.submitted + 1000 || force)) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight) * (reduced.matches ? 1 : ease((elapsed - timing.submitted) / 850));
+    lastOutgoing = isOutgoing;
+    const reveal = reduced.matches ? Number(elapsed >= timing.codex) : ease((elapsed - timing.codex) / 900);
     root.style.setProperty('--reveal', reveal);
     root.style.setProperty('--wx-shift', ((1 - reveal) * 43) + '%');
     root.style.setProperty('--codex-y', ((1 - reveal) * 24) + 'px');
-    const codexVisible = elapsed >= 11000;
-    const surface = selectedSurface || (sceneKey === 'send' && elapsed >= 22000 && elapsed < 25200 ? 'wechat' : 'auto');
+    const codexVisible = elapsed >= timing.codex;
+    const surface = selectedSurface || (sending && elapsed >= timing.draft && elapsed < timing.returned ? 'wechat' : 'auto');
     root.dataset.surface = surface;
     root.dataset.codex = String(codexVisible);
     root.dataset.scene = sceneKey;
@@ -214,30 +226,31 @@
       button.disabled = button.dataset.surface === 'codex' && !codexVisible;
       button.setAttribute('aria-pressed', String(button.dataset.surface === (wxActive && narrow.matches ? 'wechat' : codexVisible ? 'codex' : 'wechat')));
     });
-    const typed = Math.floor(scene.prompt.length * clamp((elapsed - 11500) / 2900));
+    const typed = Math.floor(scene.prompt.length * clamp((elapsed - timing.prompt) / 2900));
     question.textContent = scene.prompt.slice(0, reduced.matches ? scene.prompt.length : typed);
-    $('.story-caret').hidden = elapsed < 11500 || elapsed >= 14600 || reduced.matches;
+    $('.story-caret').hidden = elapsed < timing.prompt || elapsed >= timing.prompt + 3100 || reduced.matches;
     $('.story-caret').style.opacity = String(.3 + .7 * (Math.floor(elapsed / 450) % 2));
-    $('.story-tool').hidden = elapsed < 15000;
-    animateInto($('.story-tool'), reduced.matches ? 1 : ease((elapsed - 15000) / 450));
-    const sending = sceneKey === 'send' && elapsed >= 22000;
-    text('#story-answer-title', sceneKey === 'send' && elapsed >= 24600 ? '清单已提交到文件传输助手。' : scene.title);
+    $('.story-tool').hidden = elapsed < timing.tool;
+    animateInto($('.story-tool'), reduced.matches ? 1 : ease((elapsed - timing.tool) / 450));
+    text('#story-answer-title', scene.title);
     text('#story-tool-name', sending ? 'send_message' : 'read_messages');
-    text('#story-tool-detail', sending ? '文件传输助手 · 保存验收清单' : sceneKey === 'image' ? '设计协作群 · 消息与图片' : '设计协作群 · 14 条消息');
-    text('#story-tool-status', sending ? elapsed >= 24600 ? '本地已提交' : '提交中' : elapsed >= 16800 ? '已返回' : '读取中');
-    $('.story-summary').hidden = elapsed < 17400;
-    const times = sceneKey === 'send' ? [17400, 18700, 20000, 24600] : answerTimes;
-    const answerCount = times.filter(at => elapsed >= at).length;
+    text('#story-tool-detail', sending ? '设计协作群 · 发送验收提醒' : sceneKey === 'image' ? '设计协作群 · 读取消息与图片' : '设计协作群 · 14 条消息');
+    text('#story-tool-status', elapsed >= timing.returned ? sending ? '本地已提交' : '已返回' : sending ? '提交中' : '读取中');
+    const hasImage = sceneKey === 'image' && elapsed >= timing.returned;
+    $('.story-image-result').hidden = !hasImage;
+    animateInto($('.story-image-result'), reduced.matches ? 1 : ease((elapsed - timing.returned) / 600));
+    $('.story-summary').hidden = elapsed < timing.answers[0];
+    const answerCount = timing.answers.filter(at => elapsed >= at).length;
     answerNodes.forEach((node, index) => {
       node.hidden = index >= answerCount;
-      animateInto(node, reduced.matches ? 1 : ease((elapsed - times[index]) / 600));
+      animateInto(node, reduced.matches ? 1 : ease((elapsed - timing.answers[index]) / 600));
     });
-    const hasNote = elapsed >= (sceneKey === 'send' ? 25000 : 22600);
+    const hasNote = elapsed >= timing.note;
     $('#story-answer-note').hidden = !hasNote;
     if (force) {
       aiScroll = null;
-      aiBody.scrollTop = elapsed >= 20000 ? aiBody.scrollHeight : 0;
-    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote) {
+      aiBody.scrollTop = hasImage || answerCount >= 3 || hasNote ? aiBody.scrollHeight : 0;
+    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote || hasImage !== lastImage) {
       aiScroll = {at: elapsed, from: aiBody.scrollTop, to: Math.max(0, aiBody.scrollHeight - aiBody.clientHeight)};
     }
     if (aiScroll && elapsed >= aiScroll.at && elapsed < aiScroll.at + 900) {
@@ -245,22 +258,25 @@
     }
     lastAnswerCount = answerCount;
     lastNote = hasNote;
-    text('#story-chat-title', isSaved ? '文件传输助手' : '设计协作群');
-    $$('[data-chat]').forEach(item => item.classList.toggle('selected', item.dataset.chat === (isSaved ? 'saved' : 'group')));
-    text('#story-draft', isSaved && elapsed < 23600 ? savedText.slice(0, Math.floor(savedText.length * clamp((elapsed - 22100) / 1200))) : '');
-    const chapter = elapsed < 11000 ? 0 : elapsed < 15000 ? 1 : elapsed < 17400 ? 2 : 3;
+    lastImage = hasImage;
+    text('#story-chat-title', '设计协作群');
+    text('#story-draft', sending && elapsed >= timing.draft && elapsed < timing.submitted ? outgoingText.slice(0, Math.floor(outgoingText.length * clamp((elapsed - timing.draft) / 1600))) : '');
+    const chapter = timing.breaks.filter(at => elapsed >= at).length;
     root.dataset.chapter = String(chapter);
-    const status = isSaved ? elapsed >= 24600 ? '已观察到本地提交' : '正在保存清单' : elapsed < 10000 ? '群里正在讨论新版上线' : elapsed < 15000 ? '已到最新消息' : elapsed < 16800 ? '正在读取这轮讨论' : '这轮讨论已返回给 Codex';
+    const status = sending
+      ? elapsed >= timing.returned ? '已观察到本地提交' : isOutgoing ? '消息已提交，等待回执' : elapsed >= timing.draft ? '正在填写发送内容' : '等待 Codex 发送指令'
+      : elapsed < timing.codex ? sceneKey === 'image' ? '群里发来了最新设计稿' : '群里正在讨论新版上线' : elapsed < timing.tool ? '已到最新消息' : elapsed < timing.returned ? sceneKey === 'image' ? '正在获取聊天图片' : '正在读取这轮讨论' : sceneKey === 'image' ? '图片已返回给 Codex' : '这轮讨论已返回给 Codex';
     text('#story-wx-status', status);
     text('#story-caption', scene.captions[chapter]);
+    text('.story-codex-footer', sending ? '发送操作由 WeChat MCP 执行' : sceneKey === 'image' ? '根据微信返回的图片分析' : '根据微信返回的消息整理');
     $$('[data-chapter]').forEach(button => {
       if (Number(button.dataset.chapter) === chapter) button.setAttribute('aria-current', 'step');
       else button.removeAttribute('aria-current');
     });
     scrubber.value = String(elapsed);
     scrubber.style.setProperty('--progress', (elapsed / duration * 100) + '%');
-    scrubber.setAttribute('aria-valuetext', Math.floor(elapsed / 1000) + ' 秒，共 28 秒');
-    text('#story-clock', '0:' + String(Math.floor(elapsed / 1000)).padStart(2, '0') + ' / 0:28');
+    scrubber.setAttribute('aria-valuetext', Math.floor(elapsed / 1000) + ' 秒，共 ' + duration / 1000 + ' 秒');
+    text('#story-clock', '0:' + String(Math.floor(elapsed / 1000)).padStart(2, '0') + ' / 0:' + duration / 1000);
     const label = reduced.matches ? '静态展示' : playing ? '暂停 Ⅱ' : elapsed >= duration ? '重播 ↻' : '播放 ▷';
     play.textContent = label;
     play.disabled = reduced.matches;
@@ -287,11 +303,17 @@
   }
   function choose(key, autoplay) {
     sceneKey = key;
+    timing = timelines[key];
+    duration = timing.duration;
+    arrivalTimes = allArrivalTimes.slice(0, scenes[key].messages.length);
+    scrubber.max = String(duration);
+    $$('[data-chapter]').forEach((button, index) => {button.textContent = timing.labels[index];});
     elapsed = reduced.matches ? duration : 0;
     playing = autoplay && !reduced.matches;
     selectedSurface = '';
     lastAnswerCount = -1;
     lastNote = false;
+    lastImage = false;
     aiScroll = null;
     aiBody.scrollTop = 0;
     mountMessages(false);
@@ -332,7 +354,7 @@
     schedule(true);
   }
   $$('[data-chapter]').forEach(button => button.addEventListener('click', () => {
-    const positions = reduced.matches ? [10500, 14600, 17000, duration] : [0, 12000, 15700, sceneKey === 'send' ? 26000 : 22400];
+    const positions = reduced.matches ? timing.staticChapters : timing.chapters;
     seek(positions[Number(button.dataset.chapter)]);
   }));
   scrubber.addEventListener('input', () => seek(Number(scrubber.value)));
@@ -370,6 +392,7 @@
     schedule(true);
   }).observe(viewport);
   narrow.addEventListener('change', () => schedule(true));
+  $('.story-image-result').innerHTML = '<figcaption>已收到微信中的图片</figcaption>' + designImage;
   choose('read', false);
   document.fonts.ready.then(() => {measureMessages(); schedule(true);});
   observer.observe(root);

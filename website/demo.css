@@ -63,6 +63,12 @@
 .story-question{font-size:12px;line-height:1.9;padding:12px 14px;border:1px solid #e4e9dd;border-radius:8px;background:#f7f9f3;min-height:92px}
 .story-question>span{font-size:10px;color:#8a9680;display:block;margin-bottom:4px}
 .story-question p{display:inline;margin:0;color:#4b5d3f;overflow-wrap:anywhere}
+.product-demo[data-scene=send] .story-question p{white-space:pre-line}
+.product-demo[data-scene=send] .story-compose{height:114px}
+.product-demo[data-scene=send] .story-compose p{white-space:pre-line;line-height:1.7;margin-right:0;max-height:58px;overflow:auto}
+.story-image-result{margin:14px 0 18px;padding:12px;background:#f8faf5;border:1px solid #e3eadb;border-radius:7px}
+.story-image-result figcaption{font-size:10px;color:#7b8d6c;margin-bottom:10px}
+.story-image-result svg{display:block;width:100%;max-width:280px;height:auto;margin:auto}
 .story-caret{display:inline-block;width:1px;height:12px;background:#6a9253;vertical-align:middle;margin-left:3px}
 .story-tool{display:flex;gap:9px;align-items:center;font-size:10px;color:#7c8b6e;padding:14px 0;margin-bottom:6px;border-bottom:1px solid #edf0e7}
 .story-tool>div{flex:1;min-width:0}
@@ -114,6 +120,8 @@
  .story-message-track{padding-inline:13px}.story-message-body{max-width:calc(100% - 48px)}
  .story-message p{font-size:12px;line-height:1.75}.story-message small{font-size:10px}.story-message-avatar{width:28px;height:28px}
  .story-compose{height:58px}.story-wx-status{font-size:9px}
+ .product-demo[data-scene=send] .story-compose{height:132px}
+ .product-demo[data-scene=send] .story-compose p{font-size:12px;max-height:82px}
  .story-codex-body{padding:16px}.story-question{font-size:12px;min-height:106px;padding:11px 12px}
  .story-answer-heading{font-size:12px}.story-answer-item{font-size:12px;line-height:1.8;padding-block:7px}
  .story-caption{font-size:11px;min-height:40px;margin:16px 6px 5px}
