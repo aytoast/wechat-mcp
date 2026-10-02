@@ -1,6 +1,6 @@
 # WeChat MCP website
 
-Product website and documentation for WeChat MCP, maintained in `website/` alongside daemon source. Static HTML, CSS and JavaScript; no build dependencies.
+Product website and documentation for WeChat MCP, maintained in `website/` alongside WeChat MCP source. Static HTML, CSS and JavaScript; no build dependencies.
 
 ## Preview
 
