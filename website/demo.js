@@ -18,6 +18,8 @@
   const list = $('#story-message-list');
   const aiBody = $('.story-codex-body');
   const question = $('#story-question');
+  const promptDraft = $('#story-prompt-draft');
+  const promptEntry = $('.story-prompt-entry');
   const draft = $('#story-draft');
   const wxWindow = $('.story-wechat');
   const aiWindow = $('.story-codex');
@@ -126,7 +128,7 @@
   let sceneKey = 'read', elapsed = 0, playing = false, visible = false, started = false;
   let frame = 0, previous = 0, selectedSurface = '', shownCount = -1;
   let messageNodes = [], scrollStops = [], answerNodes = [], lastAnswerCount = -1, lastNote = false;
-  let aiScroll = null, lastImage = false, lastComposed = false, lastContext = false;
+  let aiScroll = null, lastImage = false, lastComposed = false, lastContext = false, lastQuestion = false;
   const clamp = x => Math.max(0, Math.min(1, x));
   // Solve cubic-bezier(.22, .68, 0, 1), shared by arrivals, scrolling and window entrance.
   function ease(x) {
@@ -254,8 +256,17 @@
       button.setAttribute('aria-pressed', String(button.dataset.surface === (wxActive && narrow.matches ? 'wechat' : codexVisible ? 'codex' : 'wechat')));
     });
     const typed = Math.floor(scene.prompt.length * clamp((elapsed - timing.prompt) / promptDuration));
-    question.textContent = scene.prompt.slice(0, reduced.matches ? scene.prompt.length : typed);
-    $('.story-caret').hidden = elapsed < timing.prompt || elapsed >= timing.prompt + promptDuration + 100 || reduced.matches;
+    const hasQuestion = elapsed >= timing.prompt + promptDuration;
+    const promptText = hasQuestion ? '' : scene.prompt.slice(0, typed);
+    if (promptDraft.textContent !== promptText) {
+      promptDraft.textContent = promptText;
+      promptEntry.scrollTop = promptEntry.scrollHeight;
+    }
+    question.textContent = scene.prompt;
+    $('.story-question').hidden = !hasQuestion;
+    animateInto($('.story-question'), reduced.matches ? 1 : ease((elapsed - timing.prompt - promptDuration) / 350), 5);
+    $('.story-codex-composer').classList.toggle('has-prompt', Boolean(promptText));
+    $('.story-caret').hidden = elapsed < timing.prompt || hasQuestion || reduced.matches;
     $('.story-caret').style.opacity = String(.3 + .7 * (Math.floor(elapsed / 450) % 2));
     $('.story-tool').hidden = elapsed < timing.tool;
     animateInto($('.story-tool'), reduced.matches ? 1 : ease((elapsed - timing.tool) / 450));
@@ -266,6 +277,7 @@
     const hasContext = sending && elapsed >= timing.readReturned;
     const hasComposed = sending && elapsed >= timing.composed;
     $('.story-context').hidden = !hasContext;
+    if (hasContext !== lastContext || hasComposed !== lastComposed) $('.story-context').open = hasContext && !hasComposed;
     $('.story-reply').hidden = !hasComposed;
     animateInto($('.story-context'), reduced.matches ? 1 : ease((elapsed - (timing.readReturned || 0)) / 450));
     animateInto($('.story-reply'), reduced.matches ? 1 : ease((elapsed - (timing.composed || 0)) / 500));
@@ -283,10 +295,11 @@
     });
     const hasNote = elapsed >= timing.note;
     $('#story-answer-note').hidden = !hasNote;
+    $('.story-response-actions').hidden = !hasNote;
     if (force) {
       aiScroll = null;
       aiBody.scrollTop = hasImage || answerCount >= 3 || hasNote ? aiBody.scrollHeight : 0;
-    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote || hasImage !== lastImage || hasContext !== lastContext || hasComposed !== lastComposed) {
+    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote || hasImage !== lastImage || hasContext !== lastContext || hasComposed !== lastComposed || hasQuestion !== lastQuestion) {
       aiScroll = {at: elapsed, from: aiBody.scrollTop, to: Math.max(0, aiBody.scrollHeight - aiBody.clientHeight)};
     }
     if (aiScroll && elapsed >= aiScroll.at && elapsed < aiScroll.at + 900) {
@@ -297,6 +310,7 @@
     lastImage = hasImage;
     lastContext = hasContext;
     lastComposed = hasComposed;
+    lastQuestion = hasQuestion;
     text('#story-chat-title', '设计协作群');
     const draftText = sending && elapsed >= timing.draft && elapsed < timing.submitted ? outgoingText.slice(0, Math.floor(outgoingText.length * clamp((elapsed - timing.draft) / 1100))) : '';
     if (draft.textContent !== draftText) {
@@ -345,10 +359,13 @@
     lastImage = false;
     lastContext = false;
     lastComposed = false;
+    lastQuestion = false;
+    $('.story-context').open = false;
     aiScroll = null;
     aiBody.scrollTop = 0;
     mountMessages();
     const scene = scenes[key];
+    text('#story-task-title', {read: '整理上线安排', image: '核对设计稿', send: '回复设计协作群'}[key]);
     answerNodes = scene.items.map(([title, body]) => {
       const item = document.createElement('div');
       item.className = 'story-answer-item';
@@ -377,6 +394,7 @@
     elapsed = duration;
     schedule(true);
   }
+  $('.story-context').addEventListener('click', finish);
   $$('[data-surface]').forEach(button => button.addEventListener('click', () => {
     selectedSurface = button.dataset.surface;
     playing = false;
