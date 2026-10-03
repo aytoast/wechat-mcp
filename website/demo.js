@@ -48,12 +48,11 @@
     ['小周', '小林的分工等他回来确认。']
   ];
   const imageDiscussion = [
-    ['小周', '新版桌面稿整理好了，周一按这版验收。'],
-    ['小林', '首次连接说明和空状态，图上都补了吗？', true],
-    ['小周', '补了，连接说明放在入口下面，没消息时保留卡片。'],
-    ['阿远', '失败提示和重试入口，我周五前补。'],
-    ['小林', '我先核对图上的内容，再列出需要实测的项目。', true],
-    ['小周', '桌面稿在这里。手机稿还在改，320px 按钮我周五前反馈。', false, true]
+    ['小周', '首页稿改了一轮，大家再看下。'],
+    ['阿远', '连接失败的提示我周五前补，重试入口还是留到下版。'],
+    ['小许', '手机那版呢？'],
+    ['小周', '还在改，周五给你。320px 布局和锁屏状态按计划周一实测。'],
+    ['小周', '这是最新桌面稿。', false, true]
   ];
   const replyHistory = [
     ['小周', '周一验收新版首页，移动端稿我周五补齐。'],
@@ -66,38 +65,51 @@
   const scenes = {
     read: {
       messages: discussion,
-      prompt: '我没跟上这轮群聊。请整理周一上线前已定的事项、负责人和截止时间，单独列出还没定、需要我确认的事。',
-      title: '已定安排和需要你确认的事项如下。',
+      prompt: '设计协作群刚定了什么？有需要我确认的吗？',
+      title: '这轮在定新版首页的验收安排，文案分工还需要你确认。',
       items: [
-        ['方案已定', '桌面采用左侧导航和双列卡片；手机介绍页改为单列，首版支持 Windows。'],
-        ['周五前交付', '小周补移动端稿并检查 320px 布局；阿远完成连接说明。'],
-        ['周一验收', '阿远联调消息和图片读取；锁屏提示仍待确认。'],
-        ['需要你确认', '空状态与文案拟交给你，周五前完成，需要你确认安排；锁屏提示也等你定。']
+        ['你这边', '群里想让你周五前补空状态和连接失败文案，你还没确认；锁屏提示也在等你定。'],
+        ['周五前', '小周补移动端稿并检查 320px 布局，阿远补首次连接说明。'],
+        ['周一', '阿远联调消息和图片读取，再一起实测锁屏状态。'],
+        ['已定范围', '桌面保留左侧导航和双列卡片，手机介绍页用单列，首版支持 Windows。']
       ],
-      note: '重试入口等新需求留到下版；待确认分工已单列。',
+      note: '重试入口等新需求留到下版。这轮先把已有范围做完。',
       captions: ['群聊消息持续到达，聊天记录随之向下滚动。', '向 Codex 提问，指定需要读取的这轮讨论。', 'WeChat MCP 读取消息，将内容返回 Codex。', 'Codex 根据返回的消息，整理决定、负责人和待确认项。']
     },
     image: {
       messages: imageDiscussion,
-      prompt: '查看设计协作群刚发的桌面稿，核对首次连接说明和空状态是否已经补上，再列出仅凭这张图还无法确认、需要周一实测的项目。',
-      title: '这张桌面稿里，可以确认两处改动。',
+      prompt: '这版能过吗？',
+      context: {
+        title: '延续任务：新版首页验收',
+        items: [
+          ['当前任务', '查看设计协作群最新的首页稿，按上次的约定验收。'],
+          ['验收约定', '首次连接要提示先打开并登录微信；空状态保留卡片，并告诉用户下一步怎么做。'],
+          ['本轮范围', '重试入口留到下版；手机 320px 布局与锁屏状态周一实测。']
+        ]
+      },
+      title: '还差一处：空状态没有告诉用户下一步怎么做。',
       items: [
-        ['首次连接说明', '连接入口下方已写明：首次连接前，请打开并登录微信。'],
-        ['空状态', '最近会话卡片仍保留，内部显示暂无消息。'],
-        ['图中未展示', '失败提示、重试入口和锁屏状态，需要在运行界面核对。'],
-        ['另行实测', '这张是桌面稿；手机 320px 布局与实际连接行为仍需验证。']
+        ['', '卡片保留了，但现在只写了“暂无消息”。按上次的约定，补一句“连接微信后，选择会话开始读取”，用户就知道接下来该做什么。'],
+        ['', '首次连接前打开并登录微信的提示已经补上，这项可以勾掉。'],
+        ['', '重试入口按约定留到下版，这次不用加。']
       ],
-      note: '图片用于确认可见内容，运行行为仍需实测。',
-      captions: ['设计稿作为图片出现在微信会话里。', '请 Codex 核对图中已经修改的内容。', 'WeChat MCP 获取聊天图片，并把图片内容返回 Codex。', 'Codex 查看返回的图片，区分图上可见内容与待实测项目。']
+      note: '手机 320px 布局和锁屏状态仍按计划周一实测，这张桌面稿还确认不了。',
+      captions: ['群里发来新稿，Codex 已保留这项任务的验收约定。', '沿着已有任务，只问一句：这版能过吗？', 'WeChat MCP 把最新设计稿返回 Codex。', 'Codex 对照已有约定检查图片，指出遗漏并给出修改建议。']
     },
     send: {
       messages: replyHistory,
-      prompt: '结合我们刚改的内容、项目约定和我平时的回复习惯，直接回复设计协作群里小周的问题。',
-      title: '已回复设计协作群。',
-      items: [
-        ['本地提交', '已在原有聊天记录后观察到这条回复。']
-      ],
-      note: '接收端送达状态仍为未验证。',
+      prompt: '帮我回一下小周。',
+      context: {
+        title: '已加载的记忆与项目上下文',
+        items: [
+          ['Codex 记忆', '回复同事简短直接，未完成的事说清楚。'],
+          ['当前任务', '跟进设计协作群里小周的验收问题。空状态与连接失败文案已改，周五交更新稿。'],
+          ['项目约定', '重试入口留到下版；锁屏提示周一实测。']
+        ]
+      },
+      title: '已在设计协作群回复小周。',
+      items: [],
+      note: '微信中已显示这条回复，接收端送达仍未确认。',
       captions: ['群里已有讨论，小周正在等你的答复。', 'Codex 读取群聊，结合已加载的记忆与项目上下文组织回复。', 'Codex 将组织好的回复交给 WeChat MCP，提交到原群聊。', '原有讨论保留，新回复出现在聊天记录末尾。']
     }
   };
@@ -111,7 +123,7 @@
     },
     image: {
       duration: 11000, arrivals: [160, 1360], codex: 2800, prompt: 3000, tool: 5000, returned: 5900,
-      answers: [6800, 7500, 8200, 8900], note: 9900,
+      answers: [6800, 7800, 8800], note: 9900,
       breaks: [2800, 5000, 6800]
     },
     send: {
@@ -128,7 +140,7 @@
   let sceneKey = 'read', elapsed = 0, playing = false, visible = false, started = false;
   let frame = 0, previous = 0, selectedSurface = '', shownCount = -1;
   let messageNodes = [], scrollStops = [], answerNodes = [], lastAnswerCount = -1, lastNote = false;
-  let aiScroll = null, lastImage = false, lastComposed = false, lastContext = false, lastQuestion = false;
+  let aiScroll = null, lastImage = false, lastComposed = false, lastContext = false, lastContextComplete = false, lastQuestion = false;
   const clamp = x => Math.max(0, Math.min(1, x));
   // Solve cubic-bezier(.22, .68, 0, 1), shared by arrivals, scrolling and window entrance.
   function ease(x) {
@@ -274,12 +286,13 @@
     text('#story-tool-name', 'read_messages');
     text('#story-tool-detail', sending ? '设计协作群 · 历史讨论与小周的问题' : sceneKey === 'image' ? '设计协作群 · 读取消息与图片' : '设计协作群 · ' + scene.messages.length + ' 条消息');
     text('#story-tool-status', elapsed >= (sending ? timing.readReturned : timing.returned) ? '已返回' : '读取中');
-    const hasContext = sending && elapsed >= timing.readReturned;
+    const hasContext = Boolean(scene.context) && elapsed >= timing.codex;
+    const contextComplete = hasContext && elapsed >= (sending ? timing.composed : timing.answers[0]);
     const hasComposed = sending && elapsed >= timing.composed;
     $('.story-context').hidden = !hasContext;
-    if (hasContext !== lastContext || hasComposed !== lastComposed) $('.story-context').open = hasContext && !hasComposed;
+    if (hasContext !== lastContext || contextComplete !== lastContextComplete) $('.story-context').open = hasContext && !contextComplete;
     $('.story-reply').hidden = !hasComposed;
-    animateInto($('.story-context'), reduced.matches ? 1 : ease((elapsed - (timing.readReturned || 0)) / 450));
+    animateInto($('.story-context'), reduced.matches ? 1 : ease((elapsed - timing.codex) / 450));
     animateInto($('.story-reply'), reduced.matches ? 1 : ease((elapsed - (timing.composed || 0)) / 500));
     text('#story-reply-text', outgoingText);
     $('.story-send-tool').hidden = !sending || elapsed < timing.draft;
@@ -299,7 +312,7 @@
     if (force) {
       aiScroll = null;
       aiBody.scrollTop = hasImage || answerCount >= 3 || hasNote ? aiBody.scrollHeight : 0;
-    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote || hasImage !== lastImage || hasContext !== lastContext || hasComposed !== lastComposed || hasQuestion !== lastQuestion) {
+    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote || hasImage !== lastImage || hasContext !== lastContext || contextComplete !== lastContextComplete || hasComposed !== lastComposed || hasQuestion !== lastQuestion) {
       aiScroll = {at: elapsed, from: aiBody.scrollTop, to: Math.max(0, aiBody.scrollHeight - aiBody.clientHeight)};
     }
     if (aiScroll && elapsed >= aiScroll.at && elapsed < aiScroll.at + 900) {
@@ -309,6 +322,7 @@
     lastNote = hasNote;
     lastImage = hasImage;
     lastContext = hasContext;
+    lastContextComplete = contextComplete;
     lastComposed = hasComposed;
     lastQuestion = hasQuestion;
     text('#story-chat-title', '设计协作群');
@@ -321,7 +335,7 @@
     const phase = timing.breaks.filter(at => elapsed >= at).length;
     const status = sending
       ? elapsed >= timing.returned ? '已观察到本地提交' : isOutgoing ? '消息已提交，等待回执' : elapsed >= timing.draft ? '正在填写回复' : elapsed >= timing.tool ? '读取讨论，结合 Codex 上下文回复' : '小周正在等你的答复'
-      : elapsed < timing.codex ? sceneKey === 'image' ? '群里发来了最新设计稿' : '群里正在讨论新版上线' : elapsed < timing.tool ? '已到最新消息' : elapsed < timing.returned ? sceneKey === 'image' ? '正在获取聊天图片' : '正在读取这轮讨论' : sceneKey === 'image' ? '图片已返回给 Codex' : '这轮讨论已返回给 Codex';
+      : elapsed < timing.codex ? sceneKey === 'image' ? '群里发来了最新设计稿' : '群里正在讨论首页验收' : elapsed < timing.tool ? '已到最新消息' : elapsed < timing.returned ? sceneKey === 'image' ? '正在获取聊天图片' : '正在读取这轮讨论' : sceneKey === 'image' ? '图片已返回给 Codex' : '这轮讨论已返回给 Codex';
     text('#story-wx-status', status);
     text('#story-caption', scene.captions[phase]);
     text('.story-codex-footer', sending ? 'Codex 组织回复 · WeChat MCP 执行桌面操作' : sceneKey === 'image' ? '根据微信返回的图片分析' : '根据微信返回的消息整理');
@@ -358,6 +372,7 @@
     lastNote = false;
     lastImage = false;
     lastContext = false;
+    lastContextComplete = false;
     lastComposed = false;
     lastQuestion = false;
     $('.story-context').open = false;
@@ -365,7 +380,16 @@
     aiBody.scrollTop = 0;
     mountMessages();
     const scene = scenes[key];
-    text('#story-task-title', {read: '整理上线安排', image: '核对设计稿', send: '回复设计协作群'}[key]);
+    text('#story-context-title', scene.context?.title || '');
+    const contextNodes = (scene.context?.items || []).map(([label, value]) => {
+      const paragraph = document.createElement('p');
+      const heading = document.createElement('b');
+      heading.textContent = label;
+      paragraph.append(heading, document.createTextNode(value));
+      return paragraph;
+    });
+    $('#story-context-items').replaceChildren(...contextNodes);
+    text('#story-task-title', {read: '整理验收安排', image: '核对设计稿', send: '回复设计协作群'}[key]);
     answerNodes = scene.items.map(([title, body]) => {
       const item = document.createElement('div');
       item.className = 'story-answer-item';
@@ -373,7 +397,8 @@
       heading.textContent = title;
       const paragraph = document.createElement('p');
       paragraph.textContent = body;
-      item.append(heading, paragraph);
+      if (title) item.append(heading);
+      item.append(paragraph);
       return item;
     });
     $('#story-answer-items').replaceChildren(...answerNodes);
