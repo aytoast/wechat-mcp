@@ -3,7 +3,13 @@
   if (!root) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const narrow = matchMedia('(max-width: 800px)');
-  const allArrivalTimes = [160, 400, 640, 880, 1120, 1360, 1600, 1840, 2080, 2320, 2560, 2800, 3040, 3280];
+  // Invert an ease-in-out curve: sparse arrivals at both ends, a busy middle.
+  function messageArrivalTimes(count, [first, last] = [0, 0]) {
+    if (count < 2) return count ? [first] : [];
+    return Array.from({length: count}, (_, index) => Math.round(
+      first + (last - first) * Math.acos(1 - 2 * index / (count - 1)) / Math.PI
+    ));
+  }
   const scrollDuration = 550;
   const promptDuration = 1700;
   const $ = selector => root.querySelector(selector);
@@ -17,20 +23,26 @@
 
   // Fictional conversation content. Every decision in the answer has a source here.
   const discussion = [
-    ['小周', '首页这版先做 Windows，移动端只看介绍页。'],
-    ['小许', '导航放左边？内容区我想做双列。'],
-    ['阿远', '可以，我这边接 MCP 的消息和图片读取。'],
-    ['小周', '左侧导航 + 双列卡片，按这个推进。'],
-    ['小许', '手机 320px 宽的时候，卡片改成单列。'],
-    ['阿远', '首次连接步骤要补一下，让用户知道先开微信。'],
-    ['小许', '还有空状态，没读到内容时需要说清楚。'],
-    ['小周', '我周五前补齐移动端稿，320px 我再检查一遍。'],
-    ['阿远', '首次连接说明我来写，也放周五前。'],
-    ['小许', '空状态和页面文案先排给小林，周五前，等他回来确认。'],
-    ['小周', '锁屏时的提示还没定，周一验收时一起确认。'],
-    ['阿远', '周一我联调消息和图片读取，再一起验收。'],
-    ['小许', '锁屏提示也请小林确认。这轮新需求先放下个版本。'],
-    ['小周', '收到，我把设计稿和待办都更新到群里。']
+    ['小周', '大家在吗？首页这版今天得定一下。'],
+    ['小许', '在。'],
+    ['小周', '先说范围：\n桌面端先支持 Windows，手机只放介绍页。\n导航放左边，内容用双列卡片，这版按这个做。'],
+    ['阿远', '消息和图片读取我来接。'],
+    ['小许', '手机也双列？320px 怕是塞不下。'],
+    ['小周', '手机单列，刚才说的是桌面稿。'],
+    ['小岑', '我刚试了一次，首次连接时不知道要先开微信，点完也不清楚下一步做什么。这个得写在连接入口旁边。'],
+    ['阿远', '收到，我周五前补首次连接说明。'],
+    ['小岑', '还有，没读到消息时整个卡片会空掉。\n最好保留卡片，说明现在没有消息。'],
+    ['小许', '对，没消息和连接失败得分开。'],
+    ['小周', '移动端稿我周五前补好，顺便检查 320px 的按钮和卡片有没有挤。'],
+    ['阿远', '重试入口要不要也加上？'],
+    ['小周', '先记到下版，这轮不加。'],
+    ['小许', '文案还差两块：\n· 空状态怎么写\n· 连接失败怎么提示\n先排给小林，周五前，等他回来确认。'],
+    ['小岑', '锁屏时还显示读取中，会不会误导？'],
+    ['阿远', '这个周一实测。\n我周一联调消息和图片读取，和大家一起验收。'],
+    ['小许', '锁屏提示也请小林定一下。'],
+    ['小周', '新需求都先放下版。设计稿晚点我更新到群里。'],
+    ['小岑', '收到'],
+    ['小周', '小林的分工等他回来确认。']
   ];
   const imageDiscussion = [
     ['小周', '新版桌面稿整理好了，周一按这版验收。'],
@@ -47,12 +59,12 @@
       prompt: '我没跟上这轮群聊。请整理周一上线前已定的事项、负责人和截止时间，单独列出还没定、需要我确认的事。',
       title: '已定安排和需要你确认的事项如下。',
       items: [
-        ['方案已定', '左侧导航、双列卡片；首版先支持 Windows。'],
+        ['方案已定', '桌面采用左侧导航和双列卡片；手机介绍页改为单列，首版支持 Windows。'],
         ['周五前交付', '小周补移动端稿并检查 320px 布局；阿远完成连接说明。'],
         ['周一验收', '阿远联调消息和图片读取；锁屏提示仍待确认。'],
         ['需要你确认', '空状态与文案拟交给你，周五前完成，需要你确认安排；锁屏提示也等你定。']
       ],
-      note: '按这轮讨论整理，待确认项已单独列出。',
+      note: '重试入口等新需求留到下版；待确认分工已单列。',
       captions: ['群聊消息持续到达，聊天记录随之向下滚动。', '向 Codex 提问，指定需要读取的这轮讨论。', 'WeChat MCP 读取消息，将内容返回 Codex。', 'Codex 根据返回的消息，整理决定、负责人和待确认项。']
     },
     image: {
@@ -84,12 +96,12 @@
   // Each feature has its own sequence; sending never calls a reading tool.
   const timelines = {
     read: {
-      duration: 12500, codex: 4000, prompt: 4200, tool: 6200, returned: 7100,
-      answers: [7600, 8500, 9400, 10300], note: 11400,
-      breaks: [4000, 6200, 7600]
+      duration: 13000, arrivals: [180, 3780], codex: 4400, prompt: 4600, tool: 6600, returned: 7500,
+      answers: [8000, 8800, 9600, 10400], note: 11500,
+      breaks: [4400, 6600, 8000]
     },
     image: {
-      duration: 11000, codex: 2800, prompt: 3000, tool: 5000, returned: 5900,
+      duration: 11000, arrivals: [160, 1360], codex: 2800, prompt: 3000, tool: 5000, returned: 5900,
       answers: [6800, 7500, 8200, 8900], note: 9900,
       breaks: [2800, 5000, 6800]
     },
@@ -99,7 +111,7 @@
       breaks: [2800, 4600, 5400]
     }
   };
-  let timing = timelines.read, duration = timing.duration, arrivalTimes = allArrivalTimes;
+  let timing = timelines.read, duration = timing.duration, arrivalTimes = [];
 
   const designImage = '<svg viewBox="0 0 248 154" role="img" aria-label="桌面首页设计稿：左侧导航，双列卡片，首次连接说明与暂无消息空状态"><rect width="248" height="154" rx="4" fill="#f6f8f2"/><path d="M0 23h248M54 23v131" stroke="#dfe6d5"/><circle cx="11" cy="12" r="3" fill="#8daa74"/><text x="20" y="15" font-size="8" fill="#526b40">工作台</text><rect x="8" y="36" width="38" height="14" rx="3" fill="#e0ebd5"/><text x="14" y="46" font-size="7" fill="#64804f">首页</text><text x="14" y="67" font-size="7" fill="#8b997e">会话</text><text x="65" y="42" font-size="9" fill="#3f5832">连接微信</text><rect x="183" y="30" width="54" height="17" rx="4" fill="#739553"/><text x="194" y="42" font-size="7" fill="white">开始连接</text><text x="65" y="58" font-size="7" fill="#899779">首次连接前，请打开并登录微信。</text><rect x="65" y="69" width="80" height="71" rx="4" fill="white" stroke="#dde6d2"/><rect x="154" y="69" width="83" height="71" rx="4" fill="white" stroke="#dde6d2"/><text x="76" y="86" font-size="8" fill="#5b7548">最近会话</text><text x="83" y="115" font-size="7" fill="#9caa8d">暂无消息</text><text x="165" y="86" font-size="8" fill="#5b7548">工作安排</text><path d="M165 101h59M165 113h48M165 125h54" stroke="#e5ebde" stroke-width="4" stroke-linecap="round"/></svg>';
 
@@ -231,7 +243,7 @@
     animateInto($('.story-tool'), reduced.matches ? 1 : ease((elapsed - timing.tool) / 450));
     text('#story-answer-title', scene.title);
     text('#story-tool-name', sending ? 'send_message' : 'read_messages');
-    text('#story-tool-detail', sending ? '设计协作群 · 发送验收提醒' : sceneKey === 'image' ? '设计协作群 · 读取消息与图片' : '设计协作群 · 14 条消息');
+    text('#story-tool-detail', sending ? '设计协作群 · 发送验收提醒' : sceneKey === 'image' ? '设计协作群 · 读取消息与图片' : '设计协作群 · ' + scene.messages.length + ' 条消息');
     text('#story-tool-status', elapsed >= timing.returned ? sending ? '本地已提交' : '已返回' : sending ? '提交中' : '读取中');
     const hasImage = sceneKey === 'image' && elapsed >= timing.returned;
     $('.story-image-result').hidden = !hasImage;
@@ -290,7 +302,7 @@
     sceneKey = key;
     timing = timelines[key];
     duration = timing.duration;
-    arrivalTimes = allArrivalTimes.slice(0, scenes[key].messages.length);
+    arrivalTimes = messageArrivalTimes(scenes[key].messages.length, timing.arrivals);
     elapsed = reduced.matches ? duration : 0;
     playing = autoplay && !reduced.matches;
     selectedSurface = '';
