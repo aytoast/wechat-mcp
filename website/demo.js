@@ -3,33 +3,33 @@
   if (!root) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const narrow = matchMedia('(max-width: 800px)');
-  const allArrivalTimes = [450, 1150, 1850, 2550, 3250, 3950, 4650, 5350, 6050, 6750, 7450, 8150, 8850, 9550];
+  const allArrivalTimes = [160, 400, 640, 880, 1120, 1360, 1600, 1840, 2080, 2320, 2560, 2800, 3040, 3280];
+  const scrollDuration = 550;
+  const promptDuration = 1700;
   const $ = selector => root.querySelector(selector);
   const $$ = selector => [...root.querySelectorAll(selector)];
   const viewport = $('.story-messages');
   const list = $('#story-message-list');
   const aiBody = $('.story-codex-body');
   const question = $('#story-question');
-  const play = $('#story-play');
-  const scrubber = $('.story-scrubber');
   const wxWindow = $('.story-wechat');
   const aiWindow = $('.story-codex');
 
   // Fictional conversation content. Every decision in the answer has a source here.
   const discussion = [
-    ['小林', '首页这版先做 Windows，移动端只看介绍页。', true],
-    ['小周', '导航放左边？内容区我想做双列。'],
+    ['小周', '首页这版先做 Windows，移动端只看介绍页。'],
+    ['小许', '导航放左边？内容区我想做双列。'],
     ['阿远', '可以，我这边接 MCP 的消息和图片读取。'],
-    ['小林', '左侧导航 + 双列卡片，按这个推进。', true],
-    ['小周', '手机 320px 宽的时候，卡片改成单列。'],
+    ['小周', '左侧导航 + 双列卡片，按这个推进。'],
+    ['小许', '手机 320px 宽的时候，卡片改成单列。'],
     ['阿远', '首次连接步骤要补一下，让用户知道先开微信。'],
-    ['小林', '还有空状态，没读到内容时需要说清楚。', true],
+    ['小许', '还有空状态，没读到内容时需要说清楚。'],
     ['小周', '我周五前补齐移动端稿，320px 我再检查一遍。'],
     ['阿远', '首次连接说明我来写，也放周五前。'],
-    ['小林', '我周五前整理好空状态和页面文案。', true],
+    ['小许', '空状态和页面文案先排给小林，周五前，等他回来确认。'],
     ['小周', '锁屏时的提示还没定，周一验收时一起确认。'],
     ['阿远', '周一我联调消息和图片读取，再一起验收。'],
-    ['小林', '我来确认锁屏提示。这轮先收住，新需求放下个版本。', true],
+    ['小许', '锁屏提示也请小林确认。这轮新需求先放下个版本。'],
     ['小周', '收到，我把设计稿和待办都更新到群里。']
   ];
   const imageDiscussion = [
@@ -44,13 +44,13 @@
   const scenes = {
     read: {
       messages: discussion,
-      prompt: '这轮讨论消息比较多。请整理周一上线前已经定下的事项、负责人和截止时间，单独列出还没定、需要我确认的事。',
-      title: '周一上线前，你需要跟进这些事。',
+      prompt: '我没跟上这轮群聊。请整理周一上线前已定的事项、负责人和截止时间，单独列出还没定、需要我确认的事。',
+      title: '已定安排和需要你确认的事项如下。',
       items: [
         ['方案已定', '左侧导航、双列卡片；首版先支持 Windows。'],
-        ['周五前交付', '小周补移动端稿；阿远写连接说明；你整理空状态与文案。'],
-        ['周一验收', '阿远联调消息和图片读取，你确认锁屏提示。'],
-        ['仍需跟进', '等小周反馈 320px 检查结果；锁屏提示待定，新需求留到下版。']
+        ['周五前交付', '小周补移动端稿并检查 320px 布局；阿远完成连接说明。'],
+        ['周一验收', '阿远联调消息和图片读取；锁屏提示仍待确认。'],
+        ['需要你确认', '空状态与文案拟交给你，周五前完成，需要你确认安排；锁屏提示也等你定。']
       ],
       note: '按这轮讨论整理，待确认项已单独列出。',
       captions: ['群聊消息持续到达，聊天记录随之向下滚动。', '向 Codex 提问，指定需要读取的这轮讨论。', 'WeChat MCP 读取消息，将内容返回 Codex。', 'Codex 根据返回的消息，整理决定、负责人和待确认项。']
@@ -84,22 +84,19 @@
   // Each feature has its own sequence; sending never calls a reading tool.
   const timelines = {
     read: {
-      duration: 28000, codex: 11000, prompt: 11500, tool: 15000, returned: 16800,
-      answers: [17400, 18700, 20000, 21300], note: 22600,
-      breaks: [11000, 15000, 17400], chapters: [0, 12000, 15700, 22400],
-      staticChapters: [10500, 14600, 17000, 28000], labels: ['群聊', '提问', '读取', '总结']
+      duration: 12500, codex: 4000, prompt: 4200, tool: 6200, returned: 7100,
+      answers: [7600, 8500, 9400, 10300], note: 11400,
+      breaks: [4000, 6200, 7600]
     },
     image: {
-      duration: 24000, codex: 7000, prompt: 7500, tool: 11000, returned: 12800,
-      answers: [14600, 15900, 17200, 18500], note: 20000,
-      breaks: [7000, 11000, 14600], chapters: [5000, 8500, 13500, 22000],
-      staticChapters: [6200, 10600, 13800, 24000], labels: ['图片', '提问', '读取', '分析']
+      duration: 11000, codex: 2800, prompt: 3000, tool: 5000, returned: 5900,
+      answers: [6800, 7500, 8200, 8900], note: 9900,
+      breaks: [2800, 5000, 6800]
     },
     send: {
-      duration: 18000, codex: 0, prompt: 500, tool: 7000, draft: 7800, submitted: 10800, returned: 12000,
-      answers: [12600, 13900], note: 15100,
-      breaks: [7800, 10800, 12000], chapters: [4000, 9500, 11400, 16500],
-      staticChapters: [4000, 9500, 11500, 18000], labels: ['指令', '输入', '提交', '回执']
+      duration: 9000, codex: 0, prompt: 200, tool: 2300, draft: 2800, submitted: 4600, returned: 5400,
+      answers: [6000, 6800], note: 7800,
+      breaks: [2800, 4600, 5400]
     }
   };
   let timing = timelines.read, duration = timing.duration, arrivalTimes = allArrivalTimes;
@@ -159,7 +156,7 @@
       const target = Math.max(0, node.offsetTop + node.offsetHeight + 6 - viewport.clientHeight);
       const prior = scrollStops[i-1];
       const at = sceneKey === 'send' ? timing.submitted : arrivalTimes[i];
-      const from = prior ? prior.from + (prior.to - prior.from) * ease((at - prior.at) / 850) : 0;
+      const from = prior ? prior.from + (prior.to - prior.from) * ease((at - prior.at) / scrollDuration) : 0;
       scrollStops.push({at, from, to: target});
     }
     shownCount = -1;
@@ -176,7 +173,7 @@
     let position = 0;
     for (const stop of scrollStops) {
       if (time < stop.at) break;
-      position = stop.from + (stop.to - stop.from) * ease((time - stop.at) / 850);
+      position = stop.from + (stop.to - stop.from) * ease((time - stop.at) / scrollDuration);
     }
     return position;
   }
@@ -198,15 +195,15 @@
     }
     messageNodes.forEach((node, index) => {
       if (index >= count) return;
-      const amount = reduced.matches ? 1 : ease((elapsed - (isOutgoing ? timing.submitted : arrivalTimes[index])) / 500);
+      const amount = reduced.matches ? 1 : ease((elapsed - (isOutgoing ? timing.submitted : arrivalTimes[index])) / 360);
       node.style.opacity = String(amount);
       node.style.transform = 'translateX(' + ((node.classList.contains('self') ? 1 : -1) * 12 * (1 - amount)) + 'px) scale(' + (.97 + .03 * amount) + ')';
       node.classList.toggle('is-read', !sending && elapsed >= timing.tool && elapsed < timing.returned && index >= count - 4);
     });
     if (!sending && (elapsed <= timing.codex || force || lastOutgoing)) viewport.scrollTop = scrollPosition(elapsed);
-    if (isOutgoing && (elapsed < timing.submitted + 1000 || force)) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight) * (reduced.matches ? 1 : ease((elapsed - timing.submitted) / 850));
+    if (isOutgoing && (elapsed < timing.submitted + 1000 || force)) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight) * (reduced.matches ? 1 : ease((elapsed - timing.submitted) / scrollDuration));
     lastOutgoing = isOutgoing;
-    const reveal = reduced.matches ? Number(elapsed >= timing.codex) : ease((elapsed - timing.codex) / 900);
+    const reveal = reduced.matches ? Number(elapsed >= timing.codex) : ease((elapsed - timing.codex) / 600);
     root.style.setProperty('--reveal', reveal);
     root.style.setProperty('--wx-shift', ((1 - reveal) * 43) + '%');
     root.style.setProperty('--codex-y', ((1 - reveal) * 24) + 'px');
@@ -226,9 +223,9 @@
       button.disabled = button.dataset.surface === 'codex' && !codexVisible;
       button.setAttribute('aria-pressed', String(button.dataset.surface === (wxActive && narrow.matches ? 'wechat' : codexVisible ? 'codex' : 'wechat')));
     });
-    const typed = Math.floor(scene.prompt.length * clamp((elapsed - timing.prompt) / 2900));
+    const typed = Math.floor(scene.prompt.length * clamp((elapsed - timing.prompt) / promptDuration));
     question.textContent = scene.prompt.slice(0, reduced.matches ? scene.prompt.length : typed);
-    $('.story-caret').hidden = elapsed < timing.prompt || elapsed >= timing.prompt + 3100 || reduced.matches;
+    $('.story-caret').hidden = elapsed < timing.prompt || elapsed >= timing.prompt + promptDuration + 100 || reduced.matches;
     $('.story-caret').style.opacity = String(.3 + .7 * (Math.floor(elapsed / 450) % 2));
     $('.story-tool').hidden = elapsed < timing.tool;
     animateInto($('.story-tool'), reduced.matches ? 1 : ease((elapsed - timing.tool) / 450));
@@ -260,27 +257,15 @@
     lastNote = hasNote;
     lastImage = hasImage;
     text('#story-chat-title', '设计协作群');
-    text('#story-draft', sending && elapsed >= timing.draft && elapsed < timing.submitted ? outgoingText.slice(0, Math.floor(outgoingText.length * clamp((elapsed - timing.draft) / 1600))) : '');
-    const chapter = timing.breaks.filter(at => elapsed >= at).length;
-    root.dataset.chapter = String(chapter);
+    text('#story-draft', sending && elapsed >= timing.draft && elapsed < timing.submitted ? outgoingText.slice(0, Math.floor(outgoingText.length * clamp((elapsed - timing.draft) / 1100))) : '');
+    const phase = timing.breaks.filter(at => elapsed >= at).length;
     const status = sending
       ? elapsed >= timing.returned ? '已观察到本地提交' : isOutgoing ? '消息已提交，等待回执' : elapsed >= timing.draft ? '正在填写发送内容' : '等待 Codex 发送指令'
       : elapsed < timing.codex ? sceneKey === 'image' ? '群里发来了最新设计稿' : '群里正在讨论新版上线' : elapsed < timing.tool ? '已到最新消息' : elapsed < timing.returned ? sceneKey === 'image' ? '正在获取聊天图片' : '正在读取这轮讨论' : sceneKey === 'image' ? '图片已返回给 Codex' : '这轮讨论已返回给 Codex';
     text('#story-wx-status', status);
-    text('#story-caption', scene.captions[chapter]);
+    text('#story-caption', scene.captions[phase]);
     text('.story-codex-footer', sending ? '发送操作由 WeChat MCP 执行' : sceneKey === 'image' ? '根据微信返回的图片分析' : '根据微信返回的消息整理');
-    $$('[data-chapter]').forEach(button => {
-      if (Number(button.dataset.chapter) === chapter) button.setAttribute('aria-current', 'step');
-      else button.removeAttribute('aria-current');
-    });
-    scrubber.value = String(elapsed);
-    scrubber.style.setProperty('--progress', (elapsed / duration * 100) + '%');
-    scrubber.setAttribute('aria-valuetext', Math.floor(elapsed / 1000) + ' 秒，共 ' + duration / 1000 + ' 秒');
-    text('#story-clock', '0:' + String(Math.floor(elapsed / 1000)).padStart(2, '0') + ' / 0:' + duration / 1000);
-    const label = reduced.matches ? '静态展示' : playing ? '暂停 Ⅱ' : elapsed >= duration ? '重播 ↻' : '播放 ▷';
-    play.textContent = label;
-    play.disabled = reduced.matches;
-    play.setAttribute('aria-label', reduced.matches ? '已启用减少动态效果' : playing ? '暂停演示' : elapsed >= duration ? '重播演示' : '播放演示');
+
   }
   function cancel() {
     cancelAnimationFrame(frame);
@@ -306,8 +291,6 @@
     timing = timelines[key];
     duration = timing.duration;
     arrivalTimes = allArrivalTimes.slice(0, scenes[key].messages.length);
-    scrubber.max = String(duration);
-    $$('[data-chapter]').forEach((button, index) => {button.textContent = timing.labels[index];});
     elapsed = reduced.matches ? duration : 0;
     playing = autoplay && !reduced.matches;
     selectedSurface = '';
@@ -335,39 +318,28 @@
     schedule(true);
   }
   $$('[data-scene]').forEach(button => button.addEventListener('click', () => {
+    if (button.dataset.scene === sceneKey) return;
     started = true;
     choose(button.dataset.scene, true);
   }));
-  play.addEventListener('click', () => {
-    if (reduced.matches) return;
-    started = true;
-    if (elapsed >= duration) { choose(sceneKey, true); return; }
-    playing = !playing;
-    selectedSurface = '';
-    schedule();
-  });
-  function seek(value) {
-    started = true;
+  // Interacting with a conversation settles the demo so its content stays readable.
+  function finish() {
+    if (!playing) return;
     playing = false;
-    selectedSurface = '';
-    elapsed = value;
+    elapsed = duration;
     schedule(true);
   }
-  $$('[data-chapter]').forEach(button => button.addEventListener('click', () => {
-    const positions = reduced.matches ? timing.staticChapters : timing.chapters;
-    seek(positions[Number(button.dataset.chapter)]);
-  }));
-  scrubber.addEventListener('input', () => seek(Number(scrubber.value)));
   $$('[data-surface]').forEach(button => button.addEventListener('click', () => {
     selectedSurface = button.dataset.surface;
     playing = false;
-    schedule();
+    elapsed = duration;
+    schedule(true);
   }));
-  // Let readers scroll either conversation without autoplay pulling it away.
   for (const panel of [viewport, aiBody]) {
-    for (const event of ['wheel', 'touchstart']) panel.addEventListener(event, () => {
-      if (playing) { playing = false; schedule(); }
-    }, {passive: true});
+    for (const event of ['wheel', 'touchstart']) panel.addEventListener(event, finish, {passive: true});
+    panel.addEventListener('keydown', event => {
+      if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) finish();
+    });
   }
   const observer = new IntersectionObserver(entries => {
     visible = entries[0].isIntersecting;
