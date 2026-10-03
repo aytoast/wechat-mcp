@@ -18,6 +18,7 @@
   const list = $('#story-message-list');
   const aiBody = $('.story-codex-body');
   const question = $('#story-question');
+  const draft = $('#story-draft');
   const wxWindow = $('.story-wechat');
   const aiWindow = $('.story-codex');
 
@@ -52,7 +53,14 @@
     ['小林', '我先核对图上的内容，再列出需要实测的项目。', true],
     ['小周', '桌面稿在这里。手机稿还在改，320px 按钮我周五前反馈。', false, true]
   ];
-  const outgoingText = '周一 10:00 验收新版首页。小周请准备移动端稿，阿远请演示消息和图片读取。我会核对空状态和锁屏提示。';
+  const replyHistory = [
+    ['小周', '周一验收新版首页，移动端稿我周五补齐。'],
+    ['阿远', '消息和图片读取我来联调，周一一起验收。'],
+    ['小林', '空状态和连接失败的文案我整理，周五给你们更新稿。', true],
+    ['小许', '锁屏提示还没实测，先留到周一确认。'],
+    ['小周', '@小林 文案改好了吗？重试入口这周加吗？我好排周一验收。']
+  ];
+  const outgoingText = '文案改好了，周五把更新稿给你们。\n重试入口留到下版，锁屏提示周一实测再定。先按这个排验收。';
   const scenes = {
     read: {
       messages: discussion,
@@ -81,19 +89,18 @@
       captions: ['设计稿作为图片出现在微信会话里。', '请 Codex 核对图中已经修改的内容。', 'WeChat MCP 获取聊天图片，并把图片内容返回 Codex。', 'Codex 查看返回的图片，区分图上可见内容与待实测项目。']
     },
     send: {
-      messages: [],
-      prompt: '向设计协作群发送这条周一验收提醒：\n' + outgoingText,
-      title: '验收提醒已在微信中提交。',
+      messages: replyHistory,
+      prompt: '结合我们刚改的内容、项目约定和我平时的回复习惯，直接回复设计协作群里小周的问题。',
+      title: '已回复设计协作群。',
       items: [
-        ['目标会话', '设计协作群'],
-        ['本地提交', '已在聊天记录中观察到这条验收提醒。']
+        ['本地提交', '已在原有聊天记录后观察到这条回复。']
       ],
       note: '接收端送达状态仍为未验证。',
-      captions: ['在 Codex 中指定会话，给出需要发送的消息。', 'WeChat MCP 打开目标会话，填写消息内容。', '消息出现在微信中，等待本地提交回执。', 'Codex 收到本地提交结果，接收端送达状态保留为未验证。']
+      captions: ['群里已有讨论，小周正在等你的答复。', 'Codex 读取群聊，结合已加载的记忆与项目上下文组织回复。', 'Codex 将组织好的回复交给 WeChat MCP，提交到原群聊。', '原有讨论保留，新回复出现在聊天记录末尾。']
     }
   };
 
-  // Each feature has its own sequence; sending never calls a reading tool.
+  // Replying reads the current question before composing from loaded Codex context.
   const timelines = {
     read: {
       duration: 13000, arrivals: [180, 3780], codex: 4400, prompt: 4600, tool: 6600, returned: 7500,
@@ -106,9 +113,10 @@
       breaks: [2800, 5000, 6800]
     },
     send: {
-      duration: 9000, codex: 0, prompt: 200, tool: 2300, draft: 2800, submitted: 4600, returned: 5400,
-      answers: [6000, 6800], note: 7800,
-      breaks: [2800, 4600, 5400]
+      duration: 12000, codex: 1400, prompt: 1600, tool: 3500, readReturned: 4300,
+      composed: 4700, draft: 6800, submitted: 8600, returned: 9400,
+      answers: [9900], note: 10700,
+      breaks: [3500, 6800, 9400]
     }
   };
   let timing = timelines.read, duration = timing.duration, arrivalTimes = [];
@@ -116,9 +124,9 @@
   const designImage = '<svg viewBox="0 0 248 154" role="img" aria-label="桌面首页设计稿：左侧导航，双列卡片，首次连接说明与暂无消息空状态"><rect width="248" height="154" rx="4" fill="#f6f8f2"/><path d="M0 23h248M54 23v131" stroke="#dfe6d5"/><circle cx="11" cy="12" r="3" fill="#8daa74"/><text x="20" y="15" font-size="8" fill="#526b40">工作台</text><rect x="8" y="36" width="38" height="14" rx="3" fill="#e0ebd5"/><text x="14" y="46" font-size="7" fill="#64804f">首页</text><text x="14" y="67" font-size="7" fill="#8b997e">会话</text><text x="65" y="42" font-size="9" fill="#3f5832">连接微信</text><rect x="183" y="30" width="54" height="17" rx="4" fill="#739553"/><text x="194" y="42" font-size="7" fill="white">开始连接</text><text x="65" y="58" font-size="7" fill="#899779">首次连接前，请打开并登录微信。</text><rect x="65" y="69" width="80" height="71" rx="4" fill="white" stroke="#dde6d2"/><rect x="154" y="69" width="83" height="71" rx="4" fill="white" stroke="#dde6d2"/><text x="76" y="86" font-size="8" fill="#5b7548">最近会话</text><text x="83" y="115" font-size="7" fill="#9caa8d">暂无消息</text><text x="165" y="86" font-size="8" fill="#5b7548">工作安排</text><path d="M165 101h59M165 113h48M165 125h54" stroke="#e5ebde" stroke-width="4" stroke-linecap="round"/></svg>';
 
   let sceneKey = 'read', elapsed = 0, playing = false, visible = false, started = false;
-  let frame = 0, previous = 0, selectedSurface = '', shownCount = -1, outgoingMode = false;
+  let frame = 0, previous = 0, selectedSurface = '', shownCount = -1;
   let messageNodes = [], scrollStops = [], answerNodes = [], lastAnswerCount = -1, lastNote = false;
-  let aiScroll = null, lastOutgoing = false, lastImage = false;
+  let aiScroll = null, lastImage = false, lastComposed = false, lastContext = false;
   const clamp = x => Math.max(0, Math.min(1, x));
   // Solve cubic-bezier(.22, .68, 0, 1), shared by arrivals, scrolling and window entrance.
   function ease(x) {
@@ -136,12 +144,24 @@
     const element = $(selector);
     if (element.textContent !== value) element.textContent = value;
   }
+  // Original fictional avatars, shared by repeat senders across the three stories.
+  function avatarImage(name) {
+    const palette = {
+      '小周': ['#cbd7ce', '#e7be98', '#425a4b', '#453e39'],
+      '小许': ['#d8cedb', '#edc9ac', '#80728c', '#403a49'],
+      '阿远': ['#c8d5df', '#dab69a', '#557d97', '#343d46'],
+      '小岑': ['#e4d7bf', '#e7c6a2', '#a28b60', '#514836'],
+      '小林': ['#c6d4c1', '#dfb99b', '#718868', '#3e4437']
+    };
+    const [bg, skin, shirt, hair] = palette[name] || palette['小林'];
+    return '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="' + bg + '"/><path d="M3 32c0-9 5-13 13-13s13 4 13 13" fill="' + shirt + '"/><ellipse cx="16" cy="13" rx="7" ry="8" fill="' + skin + '"/><path d="M9 14C5 4 13 2 18 4c7 1 7 7 5 12l-3-8c-3 4-7 1-11 6Z" fill="' + hair + '"/><path d="M12 21l4 4 4-4" fill="' + skin + '"/></svg>';
+  }
   function makeMessage([name, content, self, attachment]) {
     const row = document.createElement('div');
     row.className = 'story-message' + (self ? ' self' : '');
     const avatar = document.createElement('i');
     avatar.className = 'story-message-avatar';
-    avatar.textContent = name.slice(-1);
+    avatar.innerHTML = avatarImage(name);
     avatar.setAttribute('aria-hidden', 'true');
     const body = document.createElement('div');
     body.className = 'story-message-body';
@@ -167,19 +187,19 @@
       const node = messageNodes[i];
       const target = Math.max(0, node.offsetTop + node.offsetHeight + 6 - viewport.clientHeight);
       const prior = scrollStops[i-1];
-      const at = sceneKey === 'send' ? timing.submitted : arrivalTimes[i];
+      const at = sceneKey === 'send' ? i < replyHistory.length ? -scrollDuration : timing.submitted : arrivalTimes[i];
       const from = prior ? prior.from + (prior.to - prior.from) * ease((at - prior.at) / scrollDuration) : 0;
       scrollStops.push({at, from, to: target});
     }
     shownCount = -1;
   }
-  function mountMessages(outgoing) {
-    outgoingMode = outgoing;
-    messageNodes = outgoing ? [makeMessage(['小林', outgoingText, true])] : scenes[sceneKey].messages.map(makeMessage);
+  function mountMessages() {
+    messageNodes = scenes[sceneKey].messages.map(makeMessage);
+    if (sceneKey === 'send') messageNodes.push(makeMessage(['小林', outgoingText, true]));
     list.replaceChildren(...messageNodes);
     $('.story-message-time').textContent = sceneKey === 'send' ? '今天 10:35' : '今天 10:32';
     measureMessages();
-    viewport.scrollTop = 0;
+    viewport.scrollTop = sceneKey === 'send' ? scrollPosition(0) : 0;
   }
   function scrollPosition(time) {
     let position = 0;
@@ -197,24 +217,22 @@
     const scene = scenes[sceneKey];
     const sending = sceneKey === 'send';
     const isOutgoing = sending && elapsed >= timing.submitted;
-    if (outgoingMode !== isOutgoing) mountMessages(isOutgoing);
-    const count = sending ? Number(isOutgoing) : arrivalTimes.filter(at => elapsed >= at).length;
+    const count = sending ? replyHistory.length + Number(isOutgoing) : arrivalTimes.filter(at => elapsed >= at).length;
     if (count !== shownCount) {
       messageNodes.forEach((node, index) => {node.hidden = index >= count;});
       shownCount = count;
       text('#story-message-count', count + ' 条消息');
-      text('#story-preview', sending ? count ? outgoingText : '周一验收提醒' : count ? scene.messages[count - 1][1] : '有新消息');
+      text('#story-preview', isOutgoing ? outgoingText : count ? scene.messages[count - 1][1] : '有新消息');
     }
     messageNodes.forEach((node, index) => {
       if (index >= count) return;
-      const amount = reduced.matches ? 1 : ease((elapsed - (isOutgoing ? timing.submitted : arrivalTimes[index])) / 360);
+      const at = sending ? index < replyHistory.length ? -scrollDuration : timing.submitted : arrivalTimes[index];
+      const amount = reduced.matches ? 1 : ease((elapsed - at) / 360);
       node.style.opacity = String(amount);
       node.style.transform = 'translateX(' + ((node.classList.contains('self') ? 1 : -1) * 12 * (1 - amount)) + 'px) scale(' + (.97 + .03 * amount) + ')';
-      node.classList.toggle('is-read', !sending && elapsed >= timing.tool && elapsed < timing.returned && index >= count - 4);
+      node.classList.toggle('is-read', elapsed >= timing.tool && elapsed < (sending ? timing.readReturned : timing.returned) && index >= count - 4);
     });
-    if (!sending && (elapsed <= timing.codex || force || lastOutgoing)) viewport.scrollTop = scrollPosition(elapsed);
-    if (isOutgoing && (elapsed < timing.submitted + 1000 || force)) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight) * (reduced.matches ? 1 : ease((elapsed - timing.submitted) / scrollDuration));
-    lastOutgoing = isOutgoing;
+    if (force || (!sending && elapsed <= timing.codex) || (sending && elapsed < timing.submitted + scrollDuration)) viewport.scrollTop = scrollPosition(elapsed);
     const reveal = reduced.matches ? Number(elapsed >= timing.codex) : ease((elapsed - timing.codex) / 600);
     root.style.setProperty('--reveal', reveal);
     root.style.setProperty('--wx-shift', ((1 - reveal) * 43) + '%');
@@ -242,9 +260,18 @@
     $('.story-tool').hidden = elapsed < timing.tool;
     animateInto($('.story-tool'), reduced.matches ? 1 : ease((elapsed - timing.tool) / 450));
     text('#story-answer-title', scene.title);
-    text('#story-tool-name', sending ? 'send_message' : 'read_messages');
-    text('#story-tool-detail', sending ? '设计协作群 · 发送验收提醒' : sceneKey === 'image' ? '设计协作群 · 读取消息与图片' : '设计协作群 · ' + scene.messages.length + ' 条消息');
-    text('#story-tool-status', elapsed >= timing.returned ? sending ? '本地已提交' : '已返回' : sending ? '提交中' : '读取中');
+    text('#story-tool-name', 'read_messages');
+    text('#story-tool-detail', sending ? '设计协作群 · 历史讨论与小周的问题' : sceneKey === 'image' ? '设计协作群 · 读取消息与图片' : '设计协作群 · ' + scene.messages.length + ' 条消息');
+    text('#story-tool-status', elapsed >= (sending ? timing.readReturned : timing.returned) ? '已返回' : '读取中');
+    const hasContext = sending && elapsed >= timing.readReturned;
+    const hasComposed = sending && elapsed >= timing.composed;
+    $('.story-context').hidden = !hasContext;
+    $('.story-reply').hidden = !hasComposed;
+    animateInto($('.story-context'), reduced.matches ? 1 : ease((elapsed - (timing.readReturned || 0)) / 450));
+    animateInto($('.story-reply'), reduced.matches ? 1 : ease((elapsed - (timing.composed || 0)) / 500));
+    text('#story-reply-text', outgoingText);
+    $('.story-send-tool').hidden = !sending || elapsed < timing.draft;
+    text('#story-send-status', elapsed >= timing.returned ? '本地已提交' : '提交中');
     const hasImage = sceneKey === 'image' && elapsed >= timing.returned;
     $('.story-image-result').hidden = !hasImage;
     animateInto($('.story-image-result'), reduced.matches ? 1 : ease((elapsed - timing.returned) / 600));
@@ -259,7 +286,7 @@
     if (force) {
       aiScroll = null;
       aiBody.scrollTop = hasImage || answerCount >= 3 || hasNote ? aiBody.scrollHeight : 0;
-    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote || hasImage !== lastImage) {
+    } else if (answerCount !== lastAnswerCount || hasNote !== lastNote || hasImage !== lastImage || hasContext !== lastContext || hasComposed !== lastComposed) {
       aiScroll = {at: elapsed, from: aiBody.scrollTop, to: Math.max(0, aiBody.scrollHeight - aiBody.clientHeight)};
     }
     if (aiScroll && elapsed >= aiScroll.at && elapsed < aiScroll.at + 900) {
@@ -268,15 +295,22 @@
     lastAnswerCount = answerCount;
     lastNote = hasNote;
     lastImage = hasImage;
+    lastContext = hasContext;
+    lastComposed = hasComposed;
     text('#story-chat-title', '设计协作群');
-    text('#story-draft', sending && elapsed >= timing.draft && elapsed < timing.submitted ? outgoingText.slice(0, Math.floor(outgoingText.length * clamp((elapsed - timing.draft) / 1100))) : '');
+    const draftText = sending && elapsed >= timing.draft && elapsed < timing.submitted ? outgoingText.slice(0, Math.floor(outgoingText.length * clamp((elapsed - timing.draft) / 1100))) : '';
+    if (draft.textContent !== draftText) {
+      draft.textContent = draftText;
+      draft.scrollTop = draft.scrollHeight;
+    }
+    $('.story-compose').classList.toggle('has-draft', sending && elapsed >= timing.draft && elapsed < timing.submitted);
     const phase = timing.breaks.filter(at => elapsed >= at).length;
     const status = sending
-      ? elapsed >= timing.returned ? '已观察到本地提交' : isOutgoing ? '消息已提交，等待回执' : elapsed >= timing.draft ? '正在填写发送内容' : '等待 Codex 发送指令'
+      ? elapsed >= timing.returned ? '已观察到本地提交' : isOutgoing ? '消息已提交，等待回执' : elapsed >= timing.draft ? '正在填写回复' : elapsed >= timing.tool ? '读取讨论，结合 Codex 上下文回复' : '小周正在等你的答复'
       : elapsed < timing.codex ? sceneKey === 'image' ? '群里发来了最新设计稿' : '群里正在讨论新版上线' : elapsed < timing.tool ? '已到最新消息' : elapsed < timing.returned ? sceneKey === 'image' ? '正在获取聊天图片' : '正在读取这轮讨论' : sceneKey === 'image' ? '图片已返回给 Codex' : '这轮讨论已返回给 Codex';
     text('#story-wx-status', status);
     text('#story-caption', scene.captions[phase]);
-    text('.story-codex-footer', sending ? '发送操作由 WeChat MCP 执行' : sceneKey === 'image' ? '根据微信返回的图片分析' : '根据微信返回的消息整理');
+    text('.story-codex-footer', sending ? 'Codex 组织回复 · WeChat MCP 执行桌面操作' : sceneKey === 'image' ? '根据微信返回的图片分析' : '根据微信返回的消息整理');
 
   }
   function cancel() {
@@ -309,9 +343,11 @@
     lastAnswerCount = -1;
     lastNote = false;
     lastImage = false;
+    lastContext = false;
+    lastComposed = false;
     aiScroll = null;
     aiBody.scrollTop = 0;
-    mountMessages(false);
+    mountMessages();
     const scene = scenes[key];
     answerNodes = scene.items.map(([title, body]) => {
       const item = document.createElement('div');
@@ -377,6 +413,7 @@
   }).observe(viewport);
   narrow.addEventListener('change', () => schedule(true));
   $('.story-image-result').innerHTML = '<figcaption>已收到微信中的图片</figcaption>' + designImage;
+  $('.story-owner').innerHTML = avatarImage('小林');
   choose('read', false);
   document.fonts.ready.then(() => {measureMessages(); schedule(true);});
   observer.observe(root);
